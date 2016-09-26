@@ -96,8 +96,9 @@ def print_api_response(proposal):
         print("Error decoding API's json response.")
     # for item in json_response:
     #     print(item)
-    if len(json_response) == 0:
+    if len(json_response["proposals"]) == 0:
         print("Sorry, there were no matches for your query")
+        sys.exit(0)
     funded_percents = []
     donor_counts = []
     completion_costs = []
@@ -121,7 +122,6 @@ def print_api_response(proposal):
             pass  # missing a field?
         print("----\n")
     print("\nProject Averages:")
-    print("{} {} {}".format(completion_costs, sum(completion_costs), float(len(completion_costs))))
     print("\tTotal price average:\t\t${}".format(sum(total_prices) / float(len(total_prices))))
     print("\tAverage # of Students:\t\t{}".format(round(sum(student_counts) / float(len(student_counts)))))
     print("\tAverage cost to complete:\t${}".format(sum(completion_costs) / float(len(completion_costs))))
