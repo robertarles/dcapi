@@ -1,0 +1,5 @@
+dcapi:
+  dockerfile: Dockerfile
+  build: ./app
+  volumes:
+  - .:/code
