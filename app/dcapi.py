@@ -15,21 +15,22 @@ max_allowed_results = 5
 
 def execute_user_query(query,
                        state=default_state,
-                       max=max_allowed_results,
+                       max_results=max_allowed_results,
                        cost_to_complete_min=default_cost_min,
-                       cost_to_complete_max=default_cost_max):
+                       cost_to_complete_max=default_cost_max,
+                       api_sorting=api_sorting_options["urgency"]):
     """validate params, get the api response, and display the results"""
-    validate_parameters(query, state, max, cost_to_complete_min, cost_to_complete_max)
-    response = request_from_api(query, state)
+    validate_parameters(query, state, max_results, cost_to_complete_min, cost_to_complete_max, api_sorting)
+    response = request_from_api(query, state, max_results, cost_to_complete_min, cost_to_complete_max, api_sorting)
     print_api_response(response)
 
 
-def validate_parameters(query, state, max, cost_to_complete_min, cost_to_complete_max):
+def validate_parameters(query, state, max_results, cost_to_complete_min, cost_to_complete_max, api_sorting):
     """
     Ensure that all given parameters are legal and useable
     :param query: query string given by user
     :param state:
-    :param max: max number of query results desired
+    :param max_results: max number of query results desired
     :param cost_to_complete_min: min project cost allowed in  query results
     :param cost_to_complete_max: max project cost allowed in  query results
     :return: no return. failures should exit
@@ -49,7 +50,11 @@ def validate_parameters(query, state, max, cost_to_complete_min, cost_to_complet
     except AssertionError:
         print("Sorry, [{}] is not valid. State searches are currently limited to\n{}".format(state, api_states_available))
         sys.exit(1)
-
+    try:
+        assert(api_sorting in api_sorting_options.values())
+    except AssertionError:
+        print("Sorry, the sorting option chosen was not valid.")
+        sys.exit(1)
     try:
         assert(cost_to_complete_min in cost_to_complete_allowed_range and cost_to_complete_max in cost_to_complete_allowed_range)
         assert(cost_to_complete_min <= cost_to_complete_max)
@@ -58,13 +63,14 @@ def validate_parameters(query, state, max, cost_to_complete_min, cost_to_complet
         sys.exit(1)
 
     try:
-        assert(max <= max_allowed_results)
+        assert(max_results <= max_allowed_results)
     except AssertionError:
         print("Sorry, the maximum allowable result set is currently {}".format(max_allowed_results))
         sys.exit(1)
 
 
-def request_from_api(query, state, max=5, cost_to_complete_min=0, cost_to_complete_max=2000):
+def request_from_api(query, state, max, cost_to_complete_min,
+                     cost_to_complete_max, api_sorting):
     """
     Make the query to the DonersChoose API
     :param query: user supplied query
@@ -78,7 +84,8 @@ def request_from_api(query, state, max=5, cost_to_complete_min=0, cost_to_comple
                  "state": state.upper(),
                  "costToCompleteRange": "{} TO {}".format(cost_to_complete_min, cost_to_complete_max),
                  "APIKey": api_key,
-                 "max": max}
+                 "max": max,
+                 "sortBy": api_sorting}
     response = requests.get(api_url, params=paramdata)
     print("Executed Query:\n{}".format(response.url))
     return response
@@ -122,9 +129,9 @@ def print_api_response(proposal):
             pass  # missing a field?
         print("----\n")
     print("\nProject Averages:")
-    print("\tTotal price average:\t\t${}".format(sum(total_prices) / float(len(total_prices))))
+    print("\tTotal price average:\t\t${0:.2f}".format(sum(total_prices) / float(len(total_prices))))
     print("\tAverage # of Students:\t\t{}".format(round(sum(student_counts) / float(len(student_counts)))))
-    print("\tAverage cost to complete:\t${}".format(sum(completion_costs) / float(len(completion_costs))))
+    print("\tAverage cost to complete:\t${0:.2f}".format(sum(completion_costs) / float(len(completion_costs))))
     print("\tAverage # of doners:\t\t{}".format(round(sum(donor_counts) / float(len(donor_counts)))))
     print("\tAverage funded %:\t\t{}".format(sum(funded_percents) / float(len(funded_percents))))
     print()
